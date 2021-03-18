@@ -3,7 +3,7 @@ import json
 import requests
 from pprint import pprint
 
-to_keep_card_info = {
+card_info_to_keep = {
 	'card_info': ['name', 'oracle_id'],
 	'pricing_info': ['type_line', 'legalities', 'reserved','cmc', 'released_at'],
 	'printing_info': ['booster', 'full_art', 'prices', 'rarity', 'promo', 'reprint', 'set', 'set_type'],
@@ -13,7 +13,7 @@ to_keep_card_info = {
 
 def get_card_name_list():
 	url = 'https://api.scryfall.com/catalog/card-names'
-	card_name_file = 'MTG_Card_Names.txt'
+	card_name_file = 'card_jsons/card_names.txt'
 	if not os.path.exists(card_name_file) or os.path.getsize(card_name_file) < 64:
 		print('Downloading card list...')
 		url = 'https://api.scryfall.com/catalog/card-names'
@@ -31,10 +31,9 @@ def get_card_name_list():
 	return card_names
 
 
-def get_card_data():
+def get_card_data(to_keep=card_info_to_keep, card_info_file='card_jsons/base_card_data.json'):
 	# TO-DO: Gather more information for better analysis
-	bulk_save_location = 'MTG_Cards_bulk_data.json'
-	card_info_file = 'MTG_Card_info.json'
+	bulk_save_location = 'card_jsons/bulk_card_data.json'
 	if not os.path.exists(card_info_file) or os.path.getsize(card_info_file) < 64:
 		if not os.path.exists(bulk_save_location) or os.path.getsize(bulk_save_location) < 64:
 			print('MTG Card data doesn\'t exist, downloading...')
@@ -48,7 +47,7 @@ def get_card_data():
 			print('MTG Card data exist, loading...')
 			with open(bulk_save_location, 'r', encoding="utf-8") as file:
 				bulk_data = json.load(file)
-		filtered_data = extract_data(bulk_data)
+		filtered_data = extract_data(bulk_data, to_keep)
 		with open(card_info_file, 'w', encoding="utf-8") as file:
 			json.dump(filtered_data, file)
 	else:
@@ -57,7 +56,7 @@ def get_card_data():
 	return filtered_data
 
 
-def extract_data(raw_data):
+def extract_data(raw_data, to_keep=card_info_to_keep):
 	extracted_data = {}
 		
 	for card_data in raw_data:
@@ -68,22 +67,21 @@ def extract_data(raw_data):
 			oracle_card = extracted_data.get(card_data['name'].lower(), {})
 			# empty dict evaluate to False
 			if oracle_card:
-				for info_type in to_keep_card_info.keys():
-					for useful_data in to_keep_card_info[info_type]:
+				for info_type in to_keep.keys():
+					for useful_data in to_keep[info_type]:
 						if info_type == 'printing_info':
 							oracle_card[info_type][useful_data] = [card_data[useful_data]]
 						else:
 							oracle_card[info_type][useful_data] = card_data[useful_data]
 			else:
 				oracle_card = {'card_info': {},	'pricing_info': {}, 'printing_info': {}, 'extra_info': {}}
-				for useful_data in to_keep_card_info['printing_info']:
+				for useful_data in to_keep['printing_info']:
 					oracle_card['printing_info'][useful_data] = [card_data[useful_data]]
 			extracted_data[card_data['name'].lower()] = oracle_card
 
 		except KeyError as e:
 			print(card_data['name'], card_data['object'], e)
 	return extracted_data
-			# exit()
 
 
 if __name__ == "__main__":

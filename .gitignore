@@ -1,5 +1,3 @@
 .env
 venv_mtg_sent_analysis/*
-MTG_Cards_bulk_data.json
-MTG_Card_info.json
-MTG_Card_Names.txt
+card_jsons/*
